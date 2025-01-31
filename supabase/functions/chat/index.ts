@@ -46,7 +46,19 @@ serve(async (req) => {
     console.log('OpenAI API response:', data);
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${data.error?.message || 'Unknown error'}`);
+      const errorMessage = data.error?.message || 'Unknown error occurred';
+      console.error('OpenAI API error:', errorMessage);
+      return new Response(
+        JSON.stringify({ 
+          error: errorMessage.includes('quota') 
+            ? 'The AI service is currently unavailable. Please try again later.'
+            : `Error: ${errorMessage}`
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     if (!data.choices?.[0]?.message?.content) {
@@ -60,9 +72,14 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in chat function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred'
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });

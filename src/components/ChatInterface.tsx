@@ -7,7 +7,7 @@ import { useToast } from './ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'error';
   content: string;
 }
 
@@ -42,7 +42,17 @@ export const ChatInterface = () => {
         body: { message: input }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        setMessages(prev => [...prev, {
+          role: 'error',
+          content: data.error
+        }]);
+        return;
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -50,9 +60,14 @@ export const ChatInterface = () => {
       }]);
     } catch (error) {
       console.error('Chat error:', error);
+      const errorMessage = error.message || 'Failed to get response. Please try again.';
+      setMessages(prev => [...prev, {
+        role: 'error',
+        content: errorMessage
+      }]);
       toast({
         title: "Error",
-        description: "Failed to get response. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -75,6 +90,8 @@ export const ChatInterface = () => {
                 className={`max-w-[80%] p-3 rounded-lg ${
                   message.role === 'user'
                     ? 'bg-saffron text-white'
+                    : message.role === 'error'
+                    ? 'bg-red-100 text-red-800'
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
