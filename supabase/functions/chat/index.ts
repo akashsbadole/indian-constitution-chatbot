@@ -15,6 +15,12 @@ serve(async (req) => {
   try {
     const { message } = await req.json();
 
+    if (!message) {
+      throw new Error('Message is required');
+    }
+
+    console.log('Calling OpenAI API with message:', message);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,6 +43,16 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('OpenAI API response:', data);
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${data.error?.message || 'Unknown error'}`);
+    }
+
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from OpenAI API');
+    }
+
     const generatedText = data.choices[0].message.content;
 
     return new Response(JSON.stringify({ text: generatedText }), {
