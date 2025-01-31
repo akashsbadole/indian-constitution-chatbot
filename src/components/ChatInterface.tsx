@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from './ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -37,16 +38,18 @@ export const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual API call here
-      const response = await new Promise(resolve => 
-        setTimeout(() => resolve({ text: "This is a placeholder response. The actual implementation will search the constitution JSON and use OpenAI as fallback." }), 1000)
-      );
-      
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { message: input }
+      });
+
+      if (error) throw error;
+
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: (response as { text: string }).text
+        content: data.text
       }]);
     } catch (error) {
+      console.error('Chat error:', error);
       toast({
         title: "Error",
         description: "Failed to get response. Please try again.",
